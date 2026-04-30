@@ -186,8 +186,12 @@ function newGame() {
     const previousRecords = document.getElementById('previousRecords');
     const activeGameSection = document.getElementById('activeGameSection');
     
-    if (previousRecords) previousRecords.style.display = 'none';
-    if (activeGameSection) activeGameSection.style.display = 'block';
+    if (previousRecords) {
+        previousRecords.style.display = 'none';
+    }
+    if (activeGameSection) {
+        activeGameSection.style.display = 'block';
+    }
     
     // Get random problem set
     const randomSet = getRandomProblemSet();
@@ -199,36 +203,54 @@ function newGame() {
     
     console.log(`NEW Game - Set #${currentSetId} with ${currentProblems.length} problems`);
     
-    // Update set number display
-    const setNumberElement = document.getElementById('currentSetNumber');
-    if (setNumberElement) {
+    // Update set number display (if you have a set number display element)
+    let setNumberElement = document.getElementById('currentSetNumber');
+    if (!setNumberElement) {
+        // Create set number display if it doesn't exist
+        const statsDiv = document.querySelector('.stats');
+        if (statsDiv && !document.getElementById('currentSetNumber')) {
+            const setBox = document.createElement('div');
+            setBox.className = 'stat-box';
+            setBox.innerHTML = `
+                <span class="stat-label">📋 Set</span>
+                <span class="stat-value" id="currentSetNumber">${currentSetId}</span>
+            `;
+            statsDiv.insertBefore(setBox, statsDiv.children[1]);
+        }
+    } else {
         setNumberElement.textContent = currentSetId;
     }
     
-    // Reset UI
+    // Reset UI - clear any existing content
     const problemSetDiv = document.getElementById('problemSet');
     const resultsDiv = document.getElementById('results');
     
     if (problemSetDiv) {
         problemSetDiv.style.display = 'block';
-        problemSetDiv.innerHTML = '';
+        problemSetDiv.innerHTML = ''; // Clear old content
     }
     if (resultsDiv) {
         resultsDiv.style.display = 'none';
+        // Remove detailed results if present
         const resultsDetails = document.querySelector('.results-details');
         if (resultsDetails) resultsDetails.remove();
     }
     
+    // Remove any extra style elements
     const extraStyle = document.querySelector('style.results-style');
     if (extraStyle) extraStyle.remove();
     
+    // Reset progress bar
     const progressFill = document.getElementById('progressFill');
     if (progressFill) {
         progressFill.style.width = '0%';
     }
     
+    // Display the problems
     displayProblems();
-    showGameMessage(`🎮 New Game! Problem Set #${currentSetId} (${randomSet.difficulty})`, 'success');
+    
+    // Show confirmation message
+    showGameMessage(`🎮 New Game Started! Problem Set #${currentSetId} (${randomSet.difficulty})`, 'success');
 }
 
 // Display problems in the UI
@@ -239,13 +261,16 @@ function displayProblems() {
         return;
     }
     
+    // Clear existing content
     problemSetDiv.innerHTML = '<h3>📝 Solve these problems:</h3>';
     
     if (!currentProblems || currentProblems.length === 0) {
-        problemSetDiv.innerHTML += '<p>Error loading problems. Please click "New Game".</p>';
+        console.error("No problems loaded!");
+        problemSetDiv.innerHTML += '<p>Error loading problems. Please click "New Game" again.</p>';
         return;
     }
     
+    // Display each problem
     currentProblems.forEach((problem, index) => {
         const problemCard = document.createElement('div');
         problemCard.className = 'problem-card';
@@ -264,6 +289,7 @@ function displayProblems() {
         problemSetDiv.appendChild(problemCard);
     });
     
+    // Add submit button
     const submitBtn = document.createElement('button');
     submitBtn.textContent = '📊 Submit Quiz';
     submitBtn.className = 'btn-primary';
@@ -470,7 +496,7 @@ function showGame() {
         }
     }
     
-    // Show previous records
+    // Show previous records, hide active game section initially
     const previousRecords = document.getElementById('previousRecords');
     const activeGameSection = document.getElementById('activeGameSection');
     
@@ -580,6 +606,7 @@ function showResults(score, results) {
     
     if (problemSetDiv) problemSetDiv.style.display = 'none';
     if (resultsDiv) {
+        // Clear previous results
         const oldDetails = resultsDiv.querySelector('.results-details');
         if (oldDetails) oldDetails.remove();
         
@@ -724,6 +751,9 @@ function backToGame() {
     }
     if (activeGameSection && !isGameActive) {
         activeGameSection.style.display = 'none';
+    } else if (activeGameSection && isGameActive) {
+        activeGameSection.style.display = 'block';
+        previousRecords.style.display = 'none';
     }
 }
 
