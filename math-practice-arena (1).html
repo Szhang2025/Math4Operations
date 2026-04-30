@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Math Practice Arena</title>
+    <style>
+/* ========================================
+   MATH PRACTICE ARENA - STYLESHEET
+   ======================================== */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container { max-width: 900px; margin: 0 auto; }
+
+/* Cards */
+.card {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    margin-bottom: 20px;
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Typography */
+h1 {
+    margin-bottom: 10px;
+    text-align: center;
+    font-size: 2.5em;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+h2 { color: #333; margin-bottom: 20px; text-align: center; }
+h3 { color: #555; margin-bottom: 15px; font-size: 1.3em; }
+
+.subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 0.95em;
+}
+
+.hint {
+    text-align: center;
+    color: #999;
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+/* Auth Tabs */
+.auth-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    border: none;
+    background: #f0f0f0;
+    cursor: pointer;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    color: #666;
+}
+
+.tab-btn:hover { background: #e0e0e0; transform: translateY(-2px); }
+.tab-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+}
+
+/* Auth Panels */
+.auth-panel { display: none; animation: fadeIn 0.3s ease; }
+.auth-panel.active { display: block; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Inputs */
+.input {
+    width: 100%;
+    padding: 12px 15px;
+    margin: 10px 0;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+.input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+}
+
+/* Buttons */
+.btn-primary {
+    width: 100%;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102,126,234,0.4); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-secondary {
+    padding: 10px 20px;
+    background: #f0f0f0;
+    color: #666;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 5px;
+}
+.btn-secondary:hover { background: #e0e0e0; transform: translateY(-1px); }
+
+.btn-logout {
+    padding: 8px 16px;
+    background: #ff4757;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+.btn-logout:hover { background: #ff3838; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,71,87,0.3); }
+
+.btn-new-game {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 24px;
+    font-weight: bold;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%   { transform: scale(1);    box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+    50%  { transform: scale(1.05); box-shadow: 0 6px 20px rgba(102,126,234,0.6); }
+    100% { transform: scale(1);    box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+}
+.btn-new-game:hover { animation: none; transform: scale(1.08); box-shadow: 0 8px 25px rgba(102,126,234,0.6); }
+
+/* Game Header */
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #f0f0f0;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.user-info {
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.stats { display: flex; gap: 20px; align-items: center; }
+
+.stat-box {
+    background: #f8f9fa;
+    padding: 8px 15px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.stat-label { font-size: 14px; color: #888; font-weight: 500; }
+.stat-value { font-size: 18px; font-weight: 700; color: #667eea; }
+
+.guest-badge {
+    background: #ffa502;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+/* Progress Bar */
+.progress-bar {
+    background: #f0f0f0;
+    height: 8px;
+    border-radius: 10px;
+    margin: 20px 0;
+    overflow: hidden;
+}
+.progress-fill {
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 10px;
+}
+
+/* Problem Cards */
+.problem-card {
+    background: #f8f9fa;
+    padding: 20px;
+    margin: 12px 0;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+.problem-card:hover { transform: translateX(5px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.problem-card span { font-size: 20px; font-weight: 600; color: #333; }
+
+.problem-input {
+    width: 100px;
+    padding: 10px;
+    font-size: 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+.problem-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+}
+
+/* Records */
+.records-container {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 20px;
+    margin: 20px 0;
+}
+.records-list { max-height: 300px; overflow-y: auto; }
+
+.record-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    margin: 8px 0;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+    transition: all 0.3s ease;
+}
+.record-item:hover { transform: translateX(5px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.record-item span:first-child { font-size: 18px; font-weight: bold; color: #667eea; }
+.record-item span:nth-child(2) { font-size: 13px; color: #888; }
+.record-item small { font-size: 11px; color: #999; }
+.no-records { text-align: center; color: #999; padding: 20px; }
+
+/* Results */
+.results-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    padding: 40px;
+    border-radius: 20px;
+    animation: bounceIn 0.5s ease;
+    text-align: center;
+}
+@keyframes bounceIn {
+    0%   { opacity: 0; transform: scale(0.8); }
+    50%  { opacity: 1; transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+.trophy-icon { font-size: 60px; margin-bottom: 10px; }
+
+.final-score { margin: 20px 0; font-size: 22px; }
+.score-label { color: #666; margin-right: 8px; }
+.score-value { font-size: 36px; font-weight: 800; color: #667eea; }
+.score-max   { font-size: 22px; color: #999; }
+
+.results-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 25px;
+    flex-wrap: wrap;
+}
+.results-actions .btn-primary { width: auto; padding: 12px 28px; }
+
+.results-details {
+    margin-top: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.result-item {
+    display: grid;
+    grid-template-columns: 30px 1fr auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 15px;
+    margin: 6px 0;
+    border-radius: 8px;
+    font-size: 14px;
+}
+.result-item.correct   { background: #d4edda; color: #155724; }
+.result-item.incorrect { background: #f8d7da; color: #721c24; }
+
+/* Leaderboard */
+.leaderboard-header { text-align: center; margin-bottom: 25px; }
+.leaderboard-list { max-height: 500px; overflow-y: auto; margin-bottom: 20px; }
+
+.leaderboard-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    margin: 8px 0;
+    background: #f8f9fa;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+.leaderboard-item:hover { transform: translateX(5px); background: #e9ecef; }
+.rank-1 { background: linear-gradient(135deg, gold 0%, #ffd700 100%); color: #333; }
+.rank-2 { background: linear-gradient(135deg, silver 0%, #c0c0c0 100%); color: #333; }
+.rank-3 { background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%); color: white; }
+
+.leaderboard-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+/* Messages */
+.message {
+    padding: 12px 15px;
+    margin: 10px 0;
+    border-radius: 8px;
+    text-align: center;
+    animation: slideIn 0.3s ease;
+    font-weight: 500;
+}
+.message-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.message-error   { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+.message-info    { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
+/* Help Button */
+.help-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+.help-button:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    animation: fadeIn 0.3s ease;
+}
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+    animation: slideIn 0.3s ease;
+}
+.modal-content h3 { margin-bottom: 20px; }
+.modal-content ul { list-style: none; padding: 0; }
+.modal-content li { padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 16px; }
+.close { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #999; transition: color 0.3s ease; }
+.close:hover { color: #333; }
+
+/* Guest Info */
+.guest-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+.guest-info p { margin: 8px 0; font-size: 14px; }
+.guest-info p:first-child { font-size: 16px; margin-bottom: 10px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #764ba2; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    body { padding: 10px; }
+    .card { padding: 20px; }
+    h1 { font-size: 1.8em; }
+    .problem-card { flex-direction: column; gap: 15px; text-align: center; }
+    .problem-card span { font-size: 18px; }
+    .problem-input { width: 80%; }
+    .game-header { flex-direction: column; align-items: stretch; }
+    .stats { justify-content: space-between; }
+    .result-item { grid-template-columns: 1fr; gap: 5px; text-align: center; }
+    .leaderboard-item { font-size: 14px; flex-wrap: wrap; gap: 5px; }
+    .tab-btn { padding: 8px 16px; font-size: 14px; }
+    .btn-new-game { font-size: 18px; padding: 12px 30px; }
+    .record-item { flex-direction: column; text-align: center; gap: 5px; }
+    .results-actions { flex-direction: column; align-items: center; }
+    .results-actions .btn-primary,
+    .results-actions .btn-secondary { width: 100%; text-align: center; }
+}
+
+@media (max-width: 480px) {
+    .auth-tabs { flex-direction: column; }
+    .btn-primary, .btn-secondary { width: 100%; }
+    .stats { flex-direction: column; gap: 10px; }
+}
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- Auth Section -->
+    <div id="authSection" class="card">
+        <h1>🧮 Math Practice Arena</h1>
+        <p class="subtitle">Master addition, subtraction, multiplication, and division!</p>
+
+        <div class="auth-tabs">
+            <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+            <button class="tab-btn" onclick="switchTab('register')">Register</button>
+            <button class="tab-btn" onclick="switchTab('guest')">Guest Mode</button>
+        </div>
+
+        <!-- Login Panel -->
+        <div id="loginPanel" class="auth-panel active">
+            <input type="text" id="loginUsername" placeholder="Username" class="input" autocomplete="username">
+            <input type="password" id="loginPassword" placeholder="Password" class="input" autocomplete="current-password">
+            <button onclick="login()" class="btn-primary">Login</button>
+            <p class="hint">Don't have an account? Register above!</p>
+        </div>
+
+        <!-- Register Panel -->
+        <div id="registerPanel" class="auth-panel">
+            <input type="text" id="registerUsername" placeholder="Choose a username" class="input" autocomplete="off">
+            <input type="password" id="registerPassword" placeholder="Choose a password (min 4 characters)" class="input" autocomplete="new-password">
+            <button onclick="register()" class="btn-primary">Create Account</button>
+            <p class="hint">Your data is saved locally in your browser</p>
+        </div>
+
+        <!-- Guest Panel -->
+        <div id="guestPanel" class="auth-panel">
+            <div class="guest-info">
+                <p>🎮 <strong>Guest Mode</strong></p>
+                <p>✓ Play immediately, no registration needed</p>
+                <p>⚠️ Your scores won't be saved</p>
+                <p>⚠️ Leaderboard will show registered users only</p>
+            </div>
+            <button onclick="guestLogin()" class="btn-primary">Continue as Guest</button>
+        </div>
+    </div>
+
+    <!-- Game Section -->
+    <div id="gameSection" class="card" style="display:none;">
+        <div class="game-header">
+            <div class="user-info">
+                <span>Welcome, </span>
+                <strong><span id="playerName"></span></strong>
+                <span class="guest-badge" id="guestBadge" style="display:none;">(Guest)</span>
+            </div>
+            <div class="stats">
+                <div class="stat-box">
+                    <span class="stat-label">🏆 Best Score</span>
+                    <span class="stat-value" id="bestScore">0</span>
+                </div>
+                <button onclick="logout()" class="btn-logout">🚪 Logout</button>
+            </div>
+        </div>
+
+        <div style="text-align:center; margin:20px 0;">
+            <button onclick="startNewGame()" class="btn-new-game">🎮 NEW GAME 🎮</button>
+        </div>
+
+        <div id="previousRecords" class="records-container">
+            <h3>📊 Your Previous Records</h3>
+            <div id="recordsList" class="records-list"></div>
+        </div>
+
+        <div id="activeGameArea" style="display:none;">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width:0%"></div>
+            </div>
+
+            <div id="problemSet" class="problems-container"></div>
+
+            <div id="resultsArea" style="display:none;">
+                <div class="results-card">
+                    <div class="trophy-icon">🏆</div>
+                    <h3>Quiz Complete!</h3>
+                    <div class="final-score">
+                        <span class="score-label">Your Score:</span>
+                        <span class="score-value" id="finalScore">0</span>
+                        <span class="score-max">/10</span>
+                    </div>
+                    <div id="answerReview" class="results-details"></div>
+                    <div class="results-actions">
+                        <button onclick="startNewGame()" class="btn-primary">🎮 Play Again</button>
+                        <button onclick="showLeaderboard()" class="btn-secondary">🏅 View Leaderboard</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Section -->
+    <div id="leaderboardSection" class="card" style="display:none;">
+        <div class="leaderboard-header">
+            <h2>🏆 Global Leaderboard</h2>
+            <p class="subtitle">Top scores from all players</p>
+        </div>
+        <div id="leaderboardList" class="leaderboard-list"></div>
+        <div class="leaderboard-actions">
+            <button onclick="backToGame()" class="btn-secondary">← Back to Game</button>
+            <button onclick="showLeaderboard()" class="btn-secondary">🔄 Refresh</button>
+        </div>
+    </div>
+
+</div>
+
+<button class="help-button" onclick="showInstructions()" title="How to play">?</button>
+
+<script>
+// ========================================
+// MATH PRACTICE ARENA — ALL BUGS FIXED
+// ========================================
+
+let currentUser = null;
+let currentProblems = [];
+let currentSetId = null;
+let allProblemSets = [];
+
+window.addEventListener('DOMContentLoaded', () => {
+    generateAllProblemSets();
+    loadUsers();
+    loadScores();
+    checkForSavedSession();
+});
+
+// ── Problem Generation ──────────────────────────────────────────────
+
+function generateAllProblemSets() {
+    allProblemSets = [];
+    for (let setNum = 1; setNum <= 100; setNum++) {
+        const problems = [];
+        for (let i = 0; i < 10; i++) problems.push(generateRandomProblem());
+        allProblemSets.push({ setId: setNum, problems });
+    }
+}
+
+function generateRandomProblem() {
+    const operators = ['+', '-', '*', '/'];
+    // Use 'let' so division branch can reassign without shadowing
+    let num1 = Math.floor(Math.random() * 20) + 1;
+    let num2 = Math.floor(Math.random() * 20) + 1;
+    const op = operators[Math.floor(Math.random() * operators.length)];
+    let answer, expression;
+
+    if (op === '+') {
+        answer = num1 + num2;
+        expression = `${num1} + ${num2}`;
+    } else if (op === '-') {
+        // Always subtract smaller from larger so answer is never negative
+        const big = Math.max(num1, num2);
+        const small = Math.min(num1, num2);
+        num1 = big; num2 = small;
+        answer = num1 - num2;
+        expression = `${num1} - ${num2}`;
+    } else if (op === '*') {
+        answer = num1 * num2;
+        expression = `${num1} × ${num2}`;
+    } else {
+        // Build a clean division: divisor × quotient so answer is always whole
+        num2 = Math.floor(Math.random() * 10) + 1;
+        num1 = num2 * (Math.floor(Math.random() * 10) + 1);
+        answer = num1 / num2;
+        expression = `${num1} ÷ ${num2}`;
+    }
+    return { expression, answer };
+}
+
+// ── Game ────────────────────────────────────────────────────────────
+
+function startNewGame() {
+    const idx = Math.floor(Math.random() * allProblemSets.length);
+    const set = allProblemSets[idx];
+    currentSetId = set.setId;
+    currentProblems = [...set.problems];
+
+    const gameArea = document.getElementById('activeGameArea');
+    gameArea.style.display = 'block';
+    document.getElementById('resultsArea').style.display = 'none';
+    document.getElementById('problemSet').style.display = 'block';
+    document.getElementById('progressFill').style.width = '0%';
+
+    displayProblems();
+    gameArea.scrollIntoView({ behavior: 'smooth' });
+}
+
+function displayProblems() {
+    const container = document.getElementById('problemSet');
+    container.innerHTML = '<h3>📝 Solve these 10 problems:</h3>';
+
+    currentProblems.forEach((problem, i) => {
+        const div = document.createElement('div');
+        div.className = 'problem-card';
+        div.innerHTML = `
+            <span>${i + 1}. ${problem.expression} = ?</span>
+            <input type="text" inputmode="numeric" id="answer_${i}" class="problem-input"
+                   placeholder="Answer" oninput="updateProgress()">
+        `;
+        container.appendChild(div);
+    });
+
+    const btn = document.createElement('button');
+    btn.textContent = '📊 Submit Quiz';
+    btn.className = 'btn-primary';
+    btn.style.marginTop = '20px';
+    btn.onclick = submitQuiz;
+    container.appendChild(btn);
+}
+
+function updateProgress() {
+    let filled = 0;
+    for (let i = 0; i < 10; i++) {
+        const inp = document.getElementById(`answer_${i}`);
+        if (inp && inp.value.trim() !== '') filled++;
+    }
+    document.getElementById('progressFill').style.width = `${filled * 10}%`;
+}
+
+function submitQuiz() {
+    // Count unanswered
+    let unanswered = 0;
+    for (let i = 0; i < 10; i++) {
+        const inp = document.getElementById(`answer_${i}`);
+        if (!inp || inp.value.trim() === '') unanswered++;
+    }
+    if (unanswered > 0 && !confirm(`You have ${unanswered} unanswered question(s). Submit anyway?`)) return;
+
+    let score = 0;
+    const reviewData = [];
+
+    currentProblems.forEach((problem, i) => {
+        const inp = document.getElementById(`answer_${i}`);
+        const raw = inp ? inp.value.trim() : '';
+        const userAnswer = raw !== '' ? parseInt(raw, 10) : null;
+        const isCorrect = userAnswer !== null && userAnswer === problem.answer;
+        if (isCorrect) score++;
+        reviewData.push({ expression: problem.expression, correct: problem.answer, user: userAnswer, isCorrect });
+    });
+
+    if (!currentUser?.isGuest) {
+        const scores = JSON.parse(localStorage.getItem('scores'));
+        scores.push({ userId: currentUser.id, username: currentUser.username, score, setId: currentSetId, date: new Date().toISOString() });
+        localStorage.setItem('scores', JSON.stringify(scores));
+
+        if (score > (currentUser.bestScore || 0)) {
+            currentUser.bestScore = score;
+            const users = JSON.parse(localStorage.getItem('users'));
+            const ui = users.findIndex(u => u.id === currentUser.id);
+            if (ui !== -1) users[ui].bestScore = score;
+            localStorage.setItem('users', JSON.stringify(users));
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            document.getElementById('bestScore').innerText = score;
+            showGameMessage(`🎉 New High Score! ${score}/10`, 'success');
+        } else {
+            showGameMessage(`You scored ${score}/10!`, 'info');
+        }
+    }
+
+    showResults(score, reviewData);
+}
+
+function showResults(score, reviewData) {
+    document.getElementById('problemSet').style.display = 'none';
+
+    // Only inject the number — "/10" is already in the HTML
+    document.getElementById('finalScore').innerText = score;
+
+    // Answer review
+    const reviewEl = document.getElementById('answerReview');
+    reviewEl.innerHTML = '';
+    reviewData.forEach((item, i) => {
+        const div = document.createElement('div');
+        div.className = `result-item ${item.isCorrect ? 'correct' : 'incorrect'}`;
+        const shown = item.user !== null ? item.user : '—';
+        div.innerHTML = `
+            <span>${item.isCorrect ? '✅' : '❌'}</span>
+            <span>${i + 1}. ${item.expression}</span>
+            <span>You: <strong>${shown}</strong></span>
+            <span>${!item.isCorrect ? `Answer: <strong>${item.correct}</strong>` : ''}</span>
+        `;
+        reviewEl.appendChild(div);
+    });
+
+    document.getElementById('resultsArea').style.display = 'block';
+    displayPreviousRecords();
+}
+
+function displayPreviousRecords() {
+    const container = document.getElementById('recordsList');
+    if (!container) return;
+
+    if (!currentUser || currentUser.isGuest) {
+        container.innerHTML = '<div class="no-records">Login to save your scores!</div>';
+        return;
+    }
+
+    const scores = JSON.parse(localStorage.getItem('scores'));
+    const userScores = scores.filter(s => s.userId === currentUser.id).slice(-10).reverse();
+
+    if (userScores.length === 0) {
+        container.innerHTML = '<div class="no-records">No records yet. Click "NEW GAME" to start!</div>';
+        return;
+    }
+
+    container.innerHTML = '';
+    userScores.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'record-item';
+        div.innerHTML = `
+            <span>⭐ ${s.score}/10</span>
+            <span>Set #${s.setId}</span>
+            <small>📅 ${new Date(s.date).toLocaleString()}</small>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// ── Auth ────────────────────────────────────────────────────────────
+
+function loadUsers()  { if (!localStorage.getItem('users'))  localStorage.setItem('users',  JSON.stringify([])); }
+function loadScores() { if (!localStorage.getItem('scores')) localStorage.setItem('scores', JSON.stringify([])); }
+
+function checkForSavedSession() {
+    const saved = localStorage.getItem('currentUser');
+    if (saved) { currentUser = JSON.parse(saved); showGame(); }
+}
+
+function switchTab(tab) {
+    document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    const panels   = { login: 'loginPanel', register: 'registerPanel', guest: 'guestPanel' };
+    const tabIndex = { login: 0, register: 1, guest: 2 };
+    document.getElementById(panels[tab]).classList.add('active');
+    document.querySelectorAll('.tab-btn')[tabIndex[tab]].classList.add('active');
+}
+
+function register() {
+    const username = document.getElementById('registerUsername').value.trim();
+    const password = document.getElementById('registerPassword').value;
+
+    if (!username)                        { showMessage('Please enter a username', 'error'); return; }
+    if (!password || password.length < 4) { showMessage('Password must be at least 4 characters', 'error'); return; }
+
+    const users = JSON.parse(localStorage.getItem('users'));
+    if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+        showMessage('Username already taken. Please choose another.', 'error');
+        return;
+    }
+
+    users.push({ id: Date.now(), username, password, bestScore: 0, createdAt: new Date().toISOString() });
+    localStorage.setItem('users', JSON.stringify(users));
+
+    // Clear register fields
+    document.getElementById('registerUsername').value = '';
+    document.getElementById('registerPassword').value = '';
+
+    // Switch to login FIRST so showMessage inserts into the now-active login panel
+    switchTab('login');
+
+    // Pre-fill username so user only needs to type password
+    document.getElementById('loginUsername').value = username;
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginPassword').focus();
+
+    showMessage('✅ Account created! Enter your password to log in.', 'success');
+}
+
+function login() {
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+
+    if (!username) { showMessage('Please enter your username', 'error'); return; }
+    if (!password) { showMessage('Please enter your password', 'error'); return; }
+
+    const users = JSON.parse(localStorage.getItem('users'));
+    const user  = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+
+    if (!user)                    { showMessage('User not found. Please register first.', 'error'); return; }
+    if (user.password !== password) { showMessage('Incorrect password. Please try again.', 'error'); return; }
+
+    currentUser = { ...user };
+    delete currentUser.password;
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    showGame();
+}
+
+function guestLogin() {
+    currentUser = { id: 'guest_' + Date.now(), username: 'Guest', isGuest: true, bestScore: 0 };
+    showGame();
+}
+
+function logout() {
+    currentUser = null;
+    localStorage.removeItem('currentUser');
+    document.getElementById('authSection').style.display = 'block';
+    document.getElementById('gameSection').style.display = 'none';
+    document.getElementById('leaderboardSection').style.display = 'none';
+}
+
+function showGame() {
+    document.getElementById('authSection').style.display = 'none';
+    document.getElementById('gameSection').style.display = 'block';
+    document.getElementById('leaderboardSection').style.display = 'none';
+    document.getElementById('playerName').innerText = currentUser.username;
+    document.getElementById('bestScore').innerText  = currentUser.bestScore || 0;
+
+    const badge = document.getElementById('guestBadge');
+    if (badge) badge.style.display = currentUser.isGuest ? 'inline' : 'none';
+
+    document.getElementById('activeGameArea').style.display = 'none';
+    document.getElementById('problemSet').style.display     = 'block';
+    document.getElementById('resultsArea').style.display    = 'none';
+
+    displayPreviousRecords();
+}
+
+// ── Leaderboard ─────────────────────────────────────────────────────
+
+function showLeaderboard() {
+    const scores = JSON.parse(localStorage.getItem('scores'));
+    const best   = {};
+    scores.forEach(s => {
+        if (!best[s.userId] || s.score > best[s.userId].score)
+            best[s.userId] = { username: s.username, score: s.score };
+    });
+    const sorted = Object.values(best).sort((a, b) => b.score - a.score).slice(0, 20);
+
+    const container = document.getElementById('leaderboardList');
+    container.innerHTML = '<h3>🏆 Top Players</h3>';
+
+    if (sorted.length === 0) {
+        container.innerHTML += '<p style="text-align:center;color:#999;padding:20px;">No scores yet. Be the first to play!</p>';
+    } else {
+        const medals = ['🥇', '🥈', '🥉'];
+        sorted.forEach((e, i) => {
+            const medal = medals[i] ? medals[i] + ' ' : '';
+            container.innerHTML += `
+                <div class="leaderboard-item ${i < 3 ? 'rank-' + (i + 1) : ''}">
+                    <span>${medal}${i + 1}. ${e.username}</span>
+                    <span>⭐ ${e.score}/10</span>
+                </div>`;
+        });
+    }
+
+    document.getElementById('gameSection').style.display = 'none';
+    document.getElementById('leaderboardSection').style.display = 'block';
+}
+
+function backToGame() {
+    document.getElementById('leaderboardSection').style.display = 'none';
+    document.getElementById('gameSection').style.display = 'block';
+}
+
+// ── Messaging ───────────────────────────────────────────────────────
+
+function showMessage(msg, type) {
+    // Remove any existing message first
+    const old = document.querySelector('.auth-panel.active .message');
+    if (old) old.remove();
+
+    const div = document.createElement('div');
+    div.className = `message message-${type}`;
+    div.innerText = msg;
+
+    const panel = document.querySelector('.auth-panel.active');
+    if (panel) panel.insertBefore(div, panel.firstChild);
+
+    // Success messages stay longer so the user can read them
+    setTimeout(() => div.remove(), type === 'success' ? 6000 : 3000);
+}
+
+function showGameMessage(msg, type) {
+    const div = document.createElement('div');
+    div.className = `message message-${type}`;
+    div.innerText = msg;
+    Object.assign(div.style, {
+        position: 'fixed', top: '20px', left: '50%',
+        transform: 'translateX(-50%)', zIndex: '9999',
+        minWidth: '260px', textAlign: 'center',
+        padding: '14px 20px', borderRadius: '10px'
+    });
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 3500);
+}
+
+// ── Instructions ────────────────────────────────────────────────────
+
+function showInstructions() {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+            <h3>📚 How to Play</h3>
+            <ul>
+                <li>📝 Answer 10 math problems per round</li>
+                <li>➕ Problems use +, −, ×, ÷</li>
+                <li>⭐ Score 1 point per correct answer</li>
+                <li>🏆 Beat your personal best!</li>
+                <li>🎮 Click "NEW GAME" to start</li>
+                <li>📋 100 unique problem sets available</li>
+            </ul>
+            <button onclick="this.parentElement.parentElement.remove()" class="btn-primary">Got it!</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+</script>
+</body>
+</html>
