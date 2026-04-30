@@ -98,11 +98,6 @@ function generateAllProblemSets() {
     
     console.log(`✅ Generated ${allProblemSets.length} problem sets`);
     console.log(`🔍 Uniqueness check: ${duplicateCount === 0 ? 'PASSED - No duplicates!' : `FAILED - ${duplicateCount} duplicates found`}`);
-    
-    // Log sample of first 3 sets
-    for (let i = 0; i < Math.min(3, allProblemSets.length); i++) {
-        console.log(`Set ${allProblemSets[i].setId}: ${allProblemSets[i].problems.length} problems (${allProblemSets[i].difficulty})`);
-    }
 }
 
 // Generate a truly random problem
@@ -145,76 +140,6 @@ function generateRandomProblem() {
     return { expression, answer };
 }
 
-// Alternative: Generate deterministic but DIFFERENT problems for each set
-// Use this if you want consistent sets across page reloads
-function generateDeterministicUniqueSets() {
-    allProblemSets = [];
-    
-    for (let setNum = 1; setNum <= 100; setNum++) {
-        const problems = [];
-        
-        // Use different seed for each set to ensure uniqueness
-        for (let probNum = 1; probNum <= 10; probNum++) {
-            // Each set gets its own unique seed combination
-            const seed = (setNum * 10000) + (probNum * 100) + Math.floor(Math.random() * 100);
-            const problem = generateSeededProblem(seed, setNum, probNum);
-            problems.push(problem);
-        }
-        
-        allProblemSets.push({
-            setId: setNum,
-            problems: problems,
-            difficulty: getDifficultyForSet(setNum)
-        });
-    }
-}
-
-// Generate problem based on seed (deterministic)
-function generateSeededProblem(seed, setNum, probNum) {
-    // Use a simple pseudo-random generator
-    let rng = function(max) {
-        seed = (seed * 9301 + 49297) % 233280;
-        const rnd = seed / 233280;
-        return Math.floor(rnd * max);
-    };
-    
-    const operators = ['+', '-', '*', '/'];
-    const num1 = rng(20) + 1;
-    let num2 = rng(20) + 1;
-    const operator = operators[rng(operators.length)];
-    
-    let answer;
-    let expression;
-    
-    switch(operator) {
-        case '+':
-            answer = num1 + num2;
-            expression = `${num1} + ${num2}`;
-            break;
-        case '-':
-            answer = num1 - num2;
-            expression = `${num1} - ${num2}`;
-            break;
-        case '*':
-            answer = num1 * num2;
-            expression = `${num1} × ${num2}`;
-            break;
-        case '/':
-            num2 = Math.max(1, num2);
-            num1 = num1 * num2;
-            answer = num1 / num2;
-            expression = `${num1} ÷ ${num2}`;
-            break;
-    }
-    
-    // Add parentheses occasionally
-    if (rng(100) < 20 && operator !== '/') {
-        expression = `(${expression})`;
-    }
-    
-    return { expression, answer };
-}
-
 // Get difficulty level for a set
 function getDifficultyForSet(setNum) {
     if (setNum <= 33) return "Easy";
@@ -236,33 +161,31 @@ function getRandomProblemSet() {
     };
 }
 
-// Get a specific problem set by ID
-function getProblemSetById(setId) {
-    const problemSet = allProblemSets.find(ps => ps.setId === setId);
-    if (problemSet) {
-        return {
-            setId: problemSet.setId,
-            problems: [...problemSet.problems],
-            difficulty: problemSet.difficulty
-        };
-    }
-    return getRandomProblemSet();
-}
-
 // Start a new game with random set
 function newGame() {
+    console.log("Starting new game...");
+    
+    // Get random problem set
     const randomSet = getRandomProblemSet();
     currentSetId = randomSet.setId;
     currentProblems = randomSet.problems;
     userAnswers = new Array(10).fill(null);
     currentProblemIndex = 0;
     
-    // Update display
-    document.getElementById('currentSetNumber').textContent = currentSetId;
+    console.log(`Loaded Set #${currentSetId} with ${currentProblems.length} problems`);
     
-    // Reset UI
-    document.getElementById('problemSet').style.display = 'block';
-    document.getElementById('results').style.display = 'none';
+    // Update display
+    const setNumberElement = document.getElementById('currentSetNumber');
+    if (setNumberElement) {
+        setNumberElement.textContent = currentSetId;
+    }
+    
+    // Reset UI - make sure problemSet is visible and results are hidden
+    const problemSetDiv = document.getElementById('problemSet');
+    const resultsDiv = document.getElementById('results');
+    
+    if (problemSetDiv) problemSetDiv.style.display = 'block';
+    if (resultsDiv) resultsDiv.style.display = 'none';
     
     // Remove detailed results if present
     const resultsDetails = document.querySelector('.results-details');
@@ -270,13 +193,58 @@ function newGame() {
     const extraStyle = document.querySelector('style.results-style');
     if (extraStyle) extraStyle.remove();
     
+    // Display the problems
     displayProblems();
     
     // Show confirmation message
     showGameMessage(`New game started! Problem Set #${currentSetId} (${randomSet.difficulty})`, 'success');
+}
+
+// Display problems in the UI
+function displayProblems() {
+    const problemSetDiv = document.getElementById('problemSet');
+    if (!problemSetDiv) {
+        console.error("ProblemSet div not found!");
+        return;
+    }
     
-    // Log for debugging
-    console.log(`Started Set #${currentSetId} with ${currentProblems.length} problems`);
+    problemSetDiv.innerHTML = '<h3>📝 Solve these problems:</h3>';
+    
+    if (!currentProblems || currentProblems.length === 0) {
+        console.error("No problems loaded!");
+        problemSetDiv.innerHTML += '<p>Error loading problems. Please click "New Game".</p>';
+        return;
+    }
+    
+    currentProblems.forEach((problem, index) => {
+        const problemCard = document.createElement('div');
+        problemCard.className = 'problem-card';
+        problemCard.id = `problem-${index}`;
+        problemCard.innerHTML = `
+            <span class="problem-text">${index + 1}. ${problem.expression} = ?</span>
+            <input 
+                type="number" 
+                id="answer_${index}" 
+                class="problem-input" 
+                placeholder="Your answer"
+                value="${userAnswers[index] !== null ? userAnswers[index] : ''}"
+                onchange="saveAnswer(${index})"
+            >
+        `;
+        problemSetDiv.appendChild(problemCard);
+    });
+    
+    // Add submit button
+    const submitBtn = document.createElement('button');
+    submitBtn.textContent = '📊 Submit Quiz';
+    submitBtn.className = 'btn-primary';
+    submitBtn.onclick = submitQuiz;
+    problemSetDiv.appendChild(submitBtn);
+    
+    // Update progress bar
+    updateProgress();
+    
+    console.log(`Displayed ${currentProblems.length} problems`);
 }
 
 // Setup event listeners for Enter key presses
@@ -315,48 +283,19 @@ function checkForSavedSession() {
     }
 }
 
-// Load users from localStorage
+// Load users from localStorage (starts empty - no demo users)
 function loadUsers() {
     if (!localStorage.getItem('users')) {
-        const demoUsers = [
-            {
-                id: 1,
-                username: 'Alex',
-                password: '1234',
-                bestScore: 8,
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: 2,
-                username: 'Sarah',
-                password: '1234',
-                bestScore: 10,
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: 3,
-                username: 'Mike',
-                password: '1234',
-                bestScore: 7,
-                createdAt: new Date().toISOString()
-            }
-        ];
-        localStorage.setItem('users', JSON.stringify(demoUsers));
+        // Start with empty users array - no demo users
+        localStorage.setItem('users', JSON.stringify([]));
     }
 }
 
-// Load scores from localStorage
+// Load scores from localStorage (starts empty)
 function loadScores() {
     if (!localStorage.getItem('scores')) {
-        const demoScores = [
-            { userId: 1, username: 'Alex', score: 8, setId: 15, date: new Date().toISOString() },
-            { userId: 1, username: 'Alex', score: 9, setId: 42, date: new Date().toISOString() },
-            { userId: 2, username: 'Sarah', score: 10, setId: 7, date: new Date().toISOString() },
-            { userId: 2, username: 'Sarah', score: 9, setId: 88, date: new Date().toISOString() },
-            { userId: 3, username: 'Mike', score: 7, setId: 23, date: new Date().toISOString() },
-            { userId: 3, username: 'Mike', score: 8, setId: 56, date: new Date().toISOString() }
-        ];
-        localStorage.setItem('scores', JSON.stringify(demoScores));
+        // Start with empty scores array
+        localStorage.setItem('scores', JSON.stringify([]));
     }
 }
 
@@ -480,64 +419,50 @@ function logout() {
 // ========================================
 
 function showGame() {
-    document.getElementById('authSection').style.display = 'none';
-    document.getElementById('gameSection').style.display = 'block';
-    document.getElementById('leaderboardSection').style.display = 'none';
+    console.log("Showing game section...");
     
-    document.getElementById('playerName').textContent = currentUser.username;
-    document.getElementById('bestScore').textContent = currentUser.bestScore || 0;
+    // Hide auth, show game
+    const authSection = document.getElementById('authSection');
+    const gameSection = document.getElementById('gameSection');
+    const leaderboardSection = document.getElementById('leaderboardSection');
     
-    if (currentUser.isGuest) {
-        document.getElementById('guestBadge').style.display = 'inline';
-    } else {
-        document.getElementById('guestBadge').style.display = 'none';
+    if (authSection) authSection.style.display = 'none';
+    if (gameSection) gameSection.style.display = 'block';
+    if (leaderboardSection) leaderboardSection.style.display = 'none';
+    
+    // Update user info
+    const playerNameSpan = document.getElementById('playerName');
+    const bestScoreSpan = document.getElementById('bestScore');
+    const guestBadge = document.getElementById('guestBadge');
+    
+    if (playerNameSpan) playerNameSpan.textContent = currentUser.username;
+    if (bestScoreSpan) bestScoreSpan.textContent = currentUser.bestScore || 0;
+    
+    if (guestBadge) {
+        if (currentUser.isGuest) {
+            guestBadge.style.display = 'inline';
+        } else {
+            guestBadge.style.display = 'none';
+        }
     }
     
+    // Start a new game (this will load and display problems)
     newGame();
-}
-
-function displayProblems() {
-    const problemSetDiv = document.getElementById('problemSet');
-    problemSetDiv.innerHTML = '<h3>📝 Solve these problems:</h3>';
-    
-    currentProblems.forEach((problem, index) => {
-        const problemCard = document.createElement('div');
-        problemCard.className = 'problem-card';
-        problemCard.id = `problem-${index}`;
-        problemCard.innerHTML = `
-            <span class="problem-text">${index + 1}. ${problem.expression} = ?</span>
-            <input 
-                type="number" 
-                id="answer_${index}" 
-                class="problem-input" 
-                placeholder="Your answer"
-                value="${userAnswers[index] !== null ? userAnswers[index] : ''}"
-                onchange="saveAnswer(${index})"
-            >
-        `;
-        problemSetDiv.appendChild(problemCard);
-    });
-    
-    const submitBtn = document.createElement('button');
-    submitBtn.textContent = '📊 Submit Quiz';
-    submitBtn.className = 'btn-primary';
-    submitBtn.onclick = submitQuiz;
-    problemSetDiv.appendChild(submitBtn);
-    
-    updateProgress();
 }
 
 function saveAnswer(index) {
     const answerInput = document.getElementById(`answer_${index}`);
-    const answer = parseInt(answerInput.value);
-    
-    if (!isNaN(answer)) {
-        userAnswers[index] = answer;
-    } else {
-        userAnswers[index] = null;
+    if (answerInput) {
+        const answer = parseInt(answerInput.value);
+        
+        if (!isNaN(answer)) {
+            userAnswers[index] = answer;
+        } else {
+            userAnswers[index] = null;
+        }
+        
+        updateProgress();
     }
-    
-    updateProgress();
 }
 
 function updateProgress() {
@@ -603,7 +528,8 @@ function saveScore(score) {
         }
         
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        document.getElementById('bestScore').textContent = score;
+        const bestScoreSpan = document.getElementById('bestScore');
+        if (bestScoreSpan) bestScoreSpan.textContent = score;
         
         setTimeout(() => {
             showGameMessage(`🎉 New High Score! ${score}/10 🎉`, 'success');
@@ -612,9 +538,14 @@ function saveScore(score) {
 }
 
 function showResults(score, results) {
-    document.getElementById('problemSet').style.display = 'none';
-    document.getElementById('results').style.display = 'block';
-    document.getElementById('finalScore').textContent = `${score}/10`;
+    const problemSetDiv = document.getElementById('problemSet');
+    const resultsDiv = document.getElementById('results');
+    
+    if (problemSetDiv) problemSetDiv.style.display = 'none';
+    if (resultsDiv) resultsDiv.style.display = 'block';
+    
+    const finalScoreSpan = document.getElementById('finalScore');
+    if (finalScoreSpan) finalScoreSpan.textContent = `${score}/10`;
     
     const resultsDetails = document.createElement('div');
     resultsDetails.className = 'results-details';
@@ -632,50 +563,52 @@ function showResults(score, results) {
         resultsDetails.appendChild(resultItem);
     });
     
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.appendChild(resultsDetails);
+    if (resultsDiv) resultsDiv.appendChild(resultsDetails);
     
-    const style = document.createElement('style');
-    style.className = 'results-style';
-    style.textContent = `
-        .results-details {
-            margin-top: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .result-item {
-            display: grid;
-            grid-template-columns: auto 1fr auto auto;
-            gap: 15px;
-            align-items: center;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-        .result-item.correct {
-            background: #d4edda;
-            color: #155724;
-        }
-        .result-item.incorrect {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        .correct-mark {
-            font-size: 20px;
-        }
-        .wrong-mark {
-            font-size: 20px;
-        }
-        @media (max-width: 768px) {
-            .result-item {
-                grid-template-columns: 1fr;
-                gap: 5px;
-                text-align: center;
+    // Add styles if not already present
+    if (!document.querySelector('style.results-style')) {
+        const style = document.createElement('style');
+        style.className = 'results-style';
+        style.textContent = `
+            .results-details {
+                margin-top: 20px;
+                max-height: 300px;
+                overflow-y: auto;
             }
-        }
-    `;
-    resultsContainer.appendChild(style);
+            .result-item {
+                display: grid;
+                grid-template-columns: auto 1fr auto auto;
+                gap: 15px;
+                align-items: center;
+                padding: 10px;
+                margin: 5px 0;
+                border-radius: 8px;
+                font-size: 14px;
+            }
+            .result-item.correct {
+                background: #d4edda;
+                color: #155724;
+            }
+            .result-item.incorrect {
+                background: #f8d7da;
+                color: #721c24;
+            }
+            .correct-mark {
+                font-size: 20px;
+            }
+            .wrong-mark {
+                font-size: 20px;
+            }
+            @media (max-width: 768px) {
+                .result-item {
+                    grid-template-columns: 1fr;
+                    gap: 5px;
+                    text-align: center;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
 }
 
 // ========================================
@@ -701,6 +634,8 @@ function showLeaderboard() {
         .slice(0, 50);
     
     const leaderboardDiv = document.getElementById('leaderboardList');
+    if (!leaderboardDiv) return;
+    
     leaderboardDiv.innerHTML = '';
     
     if (leaderboardData.length === 0) {
@@ -724,8 +659,11 @@ function showLeaderboard() {
         });
     }
     
-    document.getElementById('gameSection').style.display = 'none';
-    document.getElementById('leaderboardSection').style.display = 'block';
+    const gameSection = document.getElementById('gameSection');
+    const leaderboardSection = document.getElementById('leaderboardSection');
+    
+    if (gameSection) gameSection.style.display = 'none';
+    if (leaderboardSection) leaderboardSection.style.display = 'block';
 }
 
 function refreshLeaderboard() {
@@ -733,8 +671,11 @@ function refreshLeaderboard() {
 }
 
 function backToGame() {
-    document.getElementById('leaderboardSection').style.display = 'none';
-    document.getElementById('gameSection').style.display = 'block';
+    const gameSection = document.getElementById('gameSection');
+    const leaderboardSection = document.getElementById('leaderboardSection');
+    
+    if (gameSection) gameSection.style.display = 'block';
+    if (leaderboardSection) leaderboardSection.style.display = 'none';
 }
 
 // ========================================
@@ -747,7 +688,9 @@ function showMessage(message, type) {
     messageDiv.textContent = message;
     
     const activePanel = document.querySelector('.auth-panel.active');
-    activePanel.insertBefore(messageDiv, activePanel.firstChild);
+    if (activePanel) {
+        activePanel.insertBefore(messageDiv, activePanel.firstChild);
+    }
     
     setTimeout(() => {
         messageDiv.remove();
@@ -760,11 +703,24 @@ function showGameMessage(message, type) {
     messageDiv.textContent = message;
     messageDiv.style.position = 'fixed';
     messageDiv.style.top = '20px';
-    messageDiv.style.left = '50%;
+    messageDiv.style.left = '50%';
     messageDiv.style.transform = 'translateX(-50%)';
     messageDiv.style.zIndex = '9999';
     messageDiv.style.minWidth = '300px';
     messageDiv.style.textAlign = 'center';
+    messageDiv.style.padding = '12px';
+    messageDiv.style.borderRadius = '8px';
+    messageDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    
+    if (type === 'success') {
+        messageDiv.style.background = '#d4edda';
+        messageDiv.style.color = '#155724';
+        messageDiv.style.border = '1px solid #c3e6cb';
+    } else {
+        messageDiv.style.background = '#f8d7da';
+        messageDiv.style.color = '#721c24';
+        messageDiv.style.border = '1px solid #f5c6cb';
+    }
     
     document.body.appendChild(messageDiv);
     
@@ -792,11 +748,22 @@ function createInstructionsModal() {
     const modal = document.createElement('div');
     modal.id = 'instructionsModal';
     modal.className = 'modal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.background = 'rgba(0,0,0,0.5)';
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    modal.style.zIndex = '2000';
+    
     modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close" onclick="closeInstructions()">&times;</span>
+        <div class="modal-content" style="background:white; padding:30px; border-radius:20px; max-width:500px; width:90%;">
+            <span class="close" style="float:right; font-size:28px; cursor:pointer;" onclick="closeInstructions()">&times;</span>
             <h3>📚 How to Play</h3>
-            <ul>
+            <ul style="margin-top:20px;">
                 <li>📝 Answer 10 random math problems</li>
                 <li>➕ Use addition (+), subtraction (-), multiplication (×), division (÷)</li>
                 <li>🧠 Some problems have parentheses for extra challenge</li>
@@ -807,17 +774,16 @@ function createInstructionsModal() {
                 <li>👥 Create an account to save your scores</li>
                 <li>🌍 Compete on the global leaderboard</li>
             </ul>
-            <button onclick="closeInstructions()" class="btn-primary">Got it!</button>
+            <button onclick="closeInstructions()" class="btn-primary" style="margin-top:20px; width:100%;">Got it!</button>
         </div>
     `;
     document.body.appendChild(modal);
-    modal.style.display = 'flex';
 }
 
 function closeInstructions() {
     const modal = document.getElementById('instructionsModal');
     if (modal) {
-        modal.style.display = 'none';
+        modal.remove();
     }
 }
 
