@@ -59,6 +59,10 @@
                         <span class="stat-label">🏆 Best Score</span>
                         <span class="stat-value" id="bestScore">0</span>
                     </div>
+                    <div class="stat-box">
+                        <span class="stat-label">📋 Set</span>
+                        <span class="stat-value" id="currentSetNumber">1</span>
+                    </div>
                     <button onclick="logout()" class="btn-logout" title="Logout">🚪 Logout</button>
                 </div>
             </div>
@@ -81,7 +85,7 @@
                         <span class="score-max">/10</span>
                     </div>
                     <div class="results-actions">
-                        <button onclick="resetQuiz()" class="btn-primary">🔄 Play Again</button>
+                        <button onclick="newGame()" class="btn-primary">🎮 New Game</button>
                         <button onclick="showLeaderboard()" class="btn-secondary">🏅 View Leaderboard</button>
                     </div>
                 </div>
@@ -114,6 +118,8 @@
                     <li>🧠 Some problems have parentheses for challenge</li>
                     <li>⭐ Score 1 point for each correct answer</li>
                     <li>🏆 Try to beat your personal best!</li>
+                    <li>📋 100 unique problem sets available</li>
+                    <li>🎮 Click "New Game" for a fresh set of problems</li>
                 </ul>
                 <button onclick="closeInstructions()" class="btn-primary">Got it!</button>
             </div>
