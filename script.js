@@ -1,12 +1,17 @@
 // ========================================
 // MATH PRACTICE ARENA - MAIN APPLICATION
+// WITH 100 UNIQUE PROBLEM SETS
 // ========================================
 
 // Global variables
 let currentUser = null;
 let currentProblems = [];
+let currentSetId = null;
 let userAnswers = [];
 let currentProblemIndex = 0;
+
+// Store all 100 problem sets
+let allProblemSets = [];
 
 // Initialize the app when page loads
 window.addEventListener('DOMContentLoaded', () => {
@@ -15,225 +20,92 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Initialize application
 function init() {
+    generateAllProblemSets(); // Generate 100 UNIQUE problem sets
+    console.log(`✅ Initialized with ${allProblemSets.length} unique problem sets`);
     loadUsers();
     loadScores();
     checkForSavedSession();
     setupEventListeners();
 }
 
-// Setup event listeners for Enter key presses
-function setupEventListeners() {
-    // Login with Enter key
-    const loginInput = document.getElementById('loginUsername');
-    if (loginInput) {
-        loginInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') login();
-        });
-    }
+// Generate 100 UNIQUE problem sets (no duplicates)
+function generateAllProblemSets() {
+    console.log("Generating 100 UNIQUE problem sets...");
+    allProblemSets = [];
     
-    // Register with Enter key
-    const registerUsername = document.getElementById('registerUsername');
-    const registerPassword = document.getElementById('registerPassword');
-    if (registerUsername) {
-        registerUsername.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') register();
-        });
-    }
-    if (registerPassword) {
-        registerPassword.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') register();
-        });
-    }
-}
-
-// Check if user was previously logged in
-function checkForSavedSession() {
-    const savedUser = localStorage.getItem('currentUser');
-    const guestMode = localStorage.getItem('guestMode');
+    const usedSetSignatures = new Set(); // Track unique sets
     
-    if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        showGame();
-    } else if (guestMode === 'true') {
-        guestLogin();
-    }
-}
-
-// Load users from localStorage
-function loadUsers() {
-    if (!localStorage.getItem('users')) {
-        // Create some demo users for testing
-        const demoUsers = [
-            {
-                id: 1,
-                username: 'Alex',
-                password: '1234',
-                bestScore: 8,
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: 2,
-                username: 'Sarah',
-                password: '1234',
-                bestScore: 10,
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: 3,
-                username: 'Mike',
-                password: '1234',
-                bestScore: 7,
-                createdAt: new Date().toISOString()
+    for (let setNum = 1; setNum <= 100; setNum++) {
+        let attempts = 0;
+        let isUnique = false;
+        let newSet = null;
+        
+        // Keep generating until we find a unique set (max 1000 attempts)
+        while (!isUnique && attempts < 1000) {
+            const problems = [];
+            
+            // Generate 10 random problems for this set
+            for (let probNum = 1; probNum <= 10; probNum++) {
+                const problem = generateRandomProblem();
+                problems.push(problem);
             }
-        ];
-        localStorage.setItem('users', JSON.stringify(demoUsers));
+            
+            // Create a unique signature for this set (string of answers)
+            const setSignature = problems.map(p => `${p.expression}|${p.answer}`).join(';;');
+            
+            // Check if this exact set already exists
+            if (!usedSetSignatures.has(setSignature)) {
+                usedSetSignatures.add(setSignature);
+                newSet = {
+                    setId: setNum,
+                    problems: problems,
+                    difficulty: getDifficultyForSet(setNum)
+                };
+                isUnique = true;
+            }
+            
+            attempts++;
+        }
+        
+        if (newSet) {
+            allProblemSets.push(newSet);
+        } else {
+            // Fallback: create a deterministic set as last resort
+            console.warn(`Could not find unique set for set ${setNum}, using fallback`);
+            const fallbackProblems = [];
+            for (let i = 1; i <= 10; i++) {
+                fallbackProblems.push({
+                    expression: `${setNum} + ${i}`,
+                    answer: setNum + i
+                });
+            }
+            allProblemSets.push({
+                setId: setNum,
+                problems: fallbackProblems,
+                difficulty: getDifficultyForSet(setNum)
+            });
+        }
     }
-}
-
-// Load scores from localStorage
-function loadScores() {
-    if (!localStorage.getItem('scores')) {
-        // Create demo scores
-        const demoScores = [
-            { userId: 1, username: 'Alex', score: 8, date: new Date().toISOString() },
-            { userId: 1, username: 'Alex', score: 9, date: new Date().toISOString() },
-            { userId: 2, username: 'Sarah', score: 10, date: new Date().toISOString() },
-            { userId: 2, username: 'Sarah', score: 9, date: new Date().toISOString() },
-            { userId: 3, username: 'Mike', score: 7, date: new Date().toISOString() },
-            { userId: 3, username: 'Mike', score: 8, date: new Date().toISOString() }
-        ];
-        localStorage.setItem('scores', JSON.stringify(demoScores));
-    }
-}
-
-// ========================================
-// AUTHENTICATION FUNCTIONS
-// ========================================
-
-function switchTab(tab) {
-    // Hide all panels
-    document.querySelectorAll('.auth-panel').forEach(panel => {
-        panel.classList.remove('active');
+    
+    // Verify uniqueness
+    const uniqueCheck = new Set();
+    let duplicateCount = 0;
+    allProblemSets.forEach(set => {
+        const sig = set.problems.map(p => `${p.expression}|${p.answer}`).join(';;');
+        if (uniqueCheck.has(sig)) duplicateCount++;
+        uniqueCheck.add(sig);
     });
     
-    // Remove active class from all tabs
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
+    console.log(`✅ Generated ${allProblemSets.length} problem sets`);
+    console.log(`🔍 Uniqueness check: ${duplicateCount === 0 ? 'PASSED - No duplicates!' : `FAILED - ${duplicateCount} duplicates found`}`);
     
-    // Show selected panel
-    if (tab === 'login') {
-        document.getElementById('loginPanel').classList.add('active');
-        document.querySelectorAll('.tab-btn')[0].classList.add('active');
-    } else if (tab === 'register') {
-        document.getElementById('registerPanel').classList.add('active');
-        document.querySelectorAll('.tab-btn')[1].classList.add('active');
-    } else if (tab === 'guest') {
-        document.getElementById('guestPanel').classList.add('active');
-        document.querySelectorAll('.tab-btn')[2].classList.add('active');
+    // Log sample of first 3 sets
+    for (let i = 0; i < Math.min(3, allProblemSets.length); i++) {
+        console.log(`Set ${allProblemSets[i].setId}: ${allProblemSets[i].problems.length} problems (${allProblemSets[i].difficulty})`);
     }
 }
 
-function register() {
-    const username = document.getElementById('registerUsername').value.trim();
-    const password = document.getElementById('registerPassword').value;
-    
-    // Validation
-    if (!username) {
-        showMessage('Please enter a username', 'error');
-        return;
-    }
-    
-    if (!password || password.length < 4) {
-        showMessage('Password must be at least 4 characters', 'error');
-        return;
-    }
-    
-    const users = JSON.parse(localStorage.getItem('users'));
-    
-    // Check if username exists
-    if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
-        showMessage('Username already exists! Please choose another.', 'error');
-        return;
-    }
-    
-    // Create new user
-    const newUser = {
-        id: Date.now(),
-        username: username,
-        password: password, // Note: In production, hash this!
-        bestScore: 0,
-        createdAt: new Date().toISOString()
-    };
-    
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    showMessage('Registration successful! Please login.', 'success');
-    
-    // Clear form
-    document.getElementById('registerUsername').value = '';
-    document.getElementById('registerPassword').value = '';
-    
-    // Switch to login tab
-    switchTab('login');
-}
-
-function login() {
-    const username = document.getElementById('loginUsername').value.trim();
-    
-    if (!username) {
-        showMessage('Please enter your username', 'error');
-        return;
-    }
-    
-    const users = JSON.parse(localStorage.getItem('users'));
-    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
-    
-    if (user) {
-        currentUser = { ...user }; // Copy user object
-        currentUser.password = undefined; // Don't store password in memory
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        localStorage.removeItem('guestMode'); // Clear guest mode if active
-        showGame();
-    } else {
-        showMessage('User not found! Please register first.', 'error');
-    }
-}
-
-function guestLogin() {
-    currentUser = {
-        id: 'guest_' + Date.now(),
-        username: 'Guest',
-        isGuest: true,
-        bestScore: 0
-    };
-    localStorage.setItem('guestMode', 'true');
-    localStorage.removeItem('currentUser');
-    showGame();
-}
-
-function logout() {
-    currentUser = null;
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('guestMode');
-    
-    document.getElementById('authSection').style.display = 'block';
-    document.getElementById('gameSection').style.display = 'none';
-    document.getElementById('leaderboardSection').style.display = 'none';
-    
-    // Clear forms
-    document.getElementById('loginUsername').value = '';
-    document.getElementById('registerUsername').value = '';
-    document.getElementById('registerPassword').value = '';
-    
-    switchTab('login');
-}
-
-// ========================================
-// MATH PROBLEM GENERATION
-// ========================================
-
+// Generate a truly random problem
 function generateRandomProblem() {
     const operators = ['+', '-', '*', '/'];
     const num1 = Math.floor(Math.random() * 20) + 1;
@@ -273,12 +145,334 @@ function generateRandomProblem() {
     return { expression, answer };
 }
 
-function generateProblemSet() {
-    const problems = [];
-    for (let i = 0; i < 10; i++) {
-        problems.push(generateRandomProblem());
+// Alternative: Generate deterministic but DIFFERENT problems for each set
+// Use this if you want consistent sets across page reloads
+function generateDeterministicUniqueSets() {
+    allProblemSets = [];
+    
+    for (let setNum = 1; setNum <= 100; setNum++) {
+        const problems = [];
+        
+        // Use different seed for each set to ensure uniqueness
+        for (let probNum = 1; probNum <= 10; probNum++) {
+            // Each set gets its own unique seed combination
+            const seed = (setNum * 10000) + (probNum * 100) + Math.floor(Math.random() * 100);
+            const problem = generateSeededProblem(seed, setNum, probNum);
+            problems.push(problem);
+        }
+        
+        allProblemSets.push({
+            setId: setNum,
+            problems: problems,
+            difficulty: getDifficultyForSet(setNum)
+        });
     }
-    return problems;
+}
+
+// Generate problem based on seed (deterministic)
+function generateSeededProblem(seed, setNum, probNum) {
+    // Use a simple pseudo-random generator
+    let rng = function(max) {
+        seed = (seed * 9301 + 49297) % 233280;
+        const rnd = seed / 233280;
+        return Math.floor(rnd * max);
+    };
+    
+    const operators = ['+', '-', '*', '/'];
+    const num1 = rng(20) + 1;
+    let num2 = rng(20) + 1;
+    const operator = operators[rng(operators.length)];
+    
+    let answer;
+    let expression;
+    
+    switch(operator) {
+        case '+':
+            answer = num1 + num2;
+            expression = `${num1} + ${num2}`;
+            break;
+        case '-':
+            answer = num1 - num2;
+            expression = `${num1} - ${num2}`;
+            break;
+        case '*':
+            answer = num1 * num2;
+            expression = `${num1} × ${num2}`;
+            break;
+        case '/':
+            num2 = Math.max(1, num2);
+            num1 = num1 * num2;
+            answer = num1 / num2;
+            expression = `${num1} ÷ ${num2}`;
+            break;
+    }
+    
+    // Add parentheses occasionally
+    if (rng(100) < 20 && operator !== '/') {
+        expression = `(${expression})`;
+    }
+    
+    return { expression, answer };
+}
+
+// Get difficulty level for a set
+function getDifficultyForSet(setNum) {
+    if (setNum <= 33) return "Easy";
+    if (setNum <= 66) return "Medium";
+    return "Hard";
+}
+
+// Get a random problem set
+function getRandomProblemSet() {
+    if (allProblemSets.length === 0) {
+        generateAllProblemSets();
+    }
+    const randomIndex = Math.floor(Math.random() * allProblemSets.length);
+    const problemSet = allProblemSets[randomIndex];
+    return {
+        setId: problemSet.setId,
+        problems: [...problemSet.problems],
+        difficulty: problemSet.difficulty
+    };
+}
+
+// Get a specific problem set by ID
+function getProblemSetById(setId) {
+    const problemSet = allProblemSets.find(ps => ps.setId === setId);
+    if (problemSet) {
+        return {
+            setId: problemSet.setId,
+            problems: [...problemSet.problems],
+            difficulty: problemSet.difficulty
+        };
+    }
+    return getRandomProblemSet();
+}
+
+// Start a new game with random set
+function newGame() {
+    const randomSet = getRandomProblemSet();
+    currentSetId = randomSet.setId;
+    currentProblems = randomSet.problems;
+    userAnswers = new Array(10).fill(null);
+    currentProblemIndex = 0;
+    
+    // Update display
+    document.getElementById('currentSetNumber').textContent = currentSetId;
+    
+    // Reset UI
+    document.getElementById('problemSet').style.display = 'block';
+    document.getElementById('results').style.display = 'none';
+    
+    // Remove detailed results if present
+    const resultsDetails = document.querySelector('.results-details');
+    if (resultsDetails) resultsDetails.remove();
+    const extraStyle = document.querySelector('style.results-style');
+    if (extraStyle) extraStyle.remove();
+    
+    displayProblems();
+    
+    // Show confirmation message
+    showGameMessage(`New game started! Problem Set #${currentSetId} (${randomSet.difficulty})`, 'success');
+    
+    // Log for debugging
+    console.log(`Started Set #${currentSetId} with ${currentProblems.length} problems`);
+}
+
+// Setup event listeners for Enter key presses
+function setupEventListeners() {
+    const loginInput = document.getElementById('loginUsername');
+    if (loginInput) {
+        loginInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') login();
+        });
+    }
+    
+    const registerUsername = document.getElementById('registerUsername');
+    const registerPassword = document.getElementById('registerPassword');
+    if (registerUsername) {
+        registerUsername.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') register();
+        });
+    }
+    if (registerPassword) {
+        registerPassword.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') register();
+        });
+    }
+}
+
+// Check if user was previously logged in
+function checkForSavedSession() {
+    const savedUser = localStorage.getItem('currentUser');
+    const guestMode = localStorage.getItem('guestMode');
+    
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        showGame();
+    } else if (guestMode === 'true') {
+        guestLogin();
+    }
+}
+
+// Load users from localStorage
+function loadUsers() {
+    if (!localStorage.getItem('users')) {
+        const demoUsers = [
+            {
+                id: 1,
+                username: 'Alex',
+                password: '1234',
+                bestScore: 8,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 2,
+                username: 'Sarah',
+                password: '1234',
+                bestScore: 10,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 3,
+                username: 'Mike',
+                password: '1234',
+                bestScore: 7,
+                createdAt: new Date().toISOString()
+            }
+        ];
+        localStorage.setItem('users', JSON.stringify(demoUsers));
+    }
+}
+
+// Load scores from localStorage
+function loadScores() {
+    if (!localStorage.getItem('scores')) {
+        const demoScores = [
+            { userId: 1, username: 'Alex', score: 8, setId: 15, date: new Date().toISOString() },
+            { userId: 1, username: 'Alex', score: 9, setId: 42, date: new Date().toISOString() },
+            { userId: 2, username: 'Sarah', score: 10, setId: 7, date: new Date().toISOString() },
+            { userId: 2, username: 'Sarah', score: 9, setId: 88, date: new Date().toISOString() },
+            { userId: 3, username: 'Mike', score: 7, setId: 23, date: new Date().toISOString() },
+            { userId: 3, username: 'Mike', score: 8, setId: 56, date: new Date().toISOString() }
+        ];
+        localStorage.setItem('scores', JSON.stringify(demoScores));
+    }
+}
+
+// ========================================
+// AUTHENTICATION FUNCTIONS
+// ========================================
+
+function switchTab(tab) {
+    document.querySelectorAll('.auth-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    if (tab === 'login') {
+        document.getElementById('loginPanel').classList.add('active');
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+    } else if (tab === 'register') {
+        document.getElementById('registerPanel').classList.add('active');
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+    } else if (tab === 'guest') {
+        document.getElementById('guestPanel').classList.add('active');
+        document.querySelectorAll('.tab-btn')[2].classList.add('active');
+    }
+}
+
+function register() {
+    const username = document.getElementById('registerUsername').value.trim();
+    const password = document.getElementById('registerPassword').value;
+    
+    if (!username) {
+        showMessage('Please enter a username', 'error');
+        return;
+    }
+    
+    if (!password || password.length < 4) {
+        showMessage('Password must be at least 4 characters', 'error');
+        return;
+    }
+    
+    const users = JSON.parse(localStorage.getItem('users'));
+    
+    if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+        showMessage('Username already exists! Please choose another.', 'error');
+        return;
+    }
+    
+    const newUser = {
+        id: Date.now(),
+        username: username,
+        password: password,
+        bestScore: 0,
+        createdAt: new Date().toISOString()
+    };
+    
+    users.push(newUser);
+    localStorage.setItem('users', JSON.stringify(users));
+    
+    showMessage('Registration successful! Please login.', 'success');
+    
+    document.getElementById('registerUsername').value = '';
+    document.getElementById('registerPassword').value = '';
+    
+    switchTab('login');
+}
+
+function login() {
+    const username = document.getElementById('loginUsername').value.trim();
+    
+    if (!username) {
+        showMessage('Please enter your username', 'error');
+        return;
+    }
+    
+    const users = JSON.parse(localStorage.getItem('users'));
+    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    
+    if (user) {
+        currentUser = { ...user };
+        currentUser.password = undefined;
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        localStorage.removeItem('guestMode');
+        showGame();
+    } else {
+        showMessage('User not found! Please register first.', 'error');
+    }
+}
+
+function guestLogin() {
+    currentUser = {
+        id: 'guest_' + Date.now(),
+        username: 'Guest',
+        isGuest: true,
+        bestScore: 0
+    };
+    localStorage.setItem('guestMode', 'true');
+    localStorage.removeItem('currentUser');
+    showGame();
+}
+
+function logout() {
+    currentUser = null;
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('guestMode');
+    
+    document.getElementById('authSection').style.display = 'block';
+    document.getElementById('gameSection').style.display = 'none';
+    document.getElementById('leaderboardSection').style.display = 'none';
+    
+    document.getElementById('loginUsername').value = '';
+    document.getElementById('registerUsername').value = '';
+    document.getElementById('registerPassword').value = '';
+    
+    switchTab('login');
 }
 
 // ========================================
@@ -286,28 +480,20 @@ function generateProblemSet() {
 // ========================================
 
 function showGame() {
-    // Hide auth, show game
     document.getElementById('authSection').style.display = 'none';
     document.getElementById('gameSection').style.display = 'block';
     document.getElementById('leaderboardSection').style.display = 'none';
     
-    // Update user info
     document.getElementById('playerName').textContent = currentUser.username;
     document.getElementById('bestScore').textContent = currentUser.bestScore || 0;
     
-    // Show/hide guest badge
     if (currentUser.isGuest) {
         document.getElementById('guestBadge').style.display = 'inline';
     } else {
         document.getElementById('guestBadge').style.display = 'none';
     }
     
-    // Generate new problems
-    currentProblems = generateProblemSet();
-    userAnswers = new Array(10).fill(null);
-    currentProblemIndex = 0;
-    
-    displayProblems();
+    newGame();
 }
 
 function displayProblems() {
@@ -332,14 +518,12 @@ function displayProblems() {
         problemSetDiv.appendChild(problemCard);
     });
     
-    // Add submit button
     const submitBtn = document.createElement('button');
     submitBtn.textContent = '📊 Submit Quiz';
     submitBtn.className = 'btn-primary';
     submitBtn.onclick = submitQuiz;
     problemSetDiv.appendChild(submitBtn);
     
-    // Update progress bar
     updateProgress();
 }
 
@@ -366,7 +550,6 @@ function updateProgress() {
 }
 
 function submitQuiz() {
-    // Check if all questions are answered
     const unanswered = userAnswers.filter(a => a === null).length;
     
     if (unanswered > 0) {
@@ -376,7 +559,6 @@ function submitQuiz() {
         }
     }
     
-    // Calculate score
     let score = 0;
     const results = [];
     
@@ -392,12 +574,10 @@ function submitQuiz() {
         });
     });
     
-    // Save score if not guest
     if (!currentUser.isGuest) {
         saveScore(score);
     }
     
-    // Show results
     showResults(score, results);
 }
 
@@ -407,15 +587,14 @@ function saveScore(score) {
         userId: currentUser.id,
         username: currentUser.username,
         score: score,
+        setId: currentSetId,
         date: new Date().toISOString()
     });
     localStorage.setItem('scores', JSON.stringify(scores));
     
-    // Update best score
     if (score > currentUser.bestScore) {
         currentUser.bestScore = score;
         
-        // Update in users array
         const users = JSON.parse(localStorage.getItem('users'));
         const userIndex = users.findIndex(u => u.id === currentUser.id);
         if (userIndex !== -1) {
@@ -423,24 +602,20 @@ function saveScore(score) {
             localStorage.setItem('users', JSON.stringify(users));
         }
         
-        // Update current user
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
         document.getElementById('bestScore').textContent = score;
         
-        // Show congratulation for new high score
         setTimeout(() => {
-            showMessage(`🎉 New High Score! ${score}/10 🎉`, 'success');
+            showGameMessage(`🎉 New High Score! ${score}/10 🎉`, 'success');
         }, 500);
     }
 }
 
 function showResults(score, results) {
-    // Hide problems, show results
     document.getElementById('problemSet').style.display = 'none';
     document.getElementById('results').style.display = 'block';
     document.getElementById('finalScore').textContent = `${score}/10`;
     
-    // Add detailed results
     const resultsDetails = document.createElement('div');
     resultsDetails.className = 'results-details';
     resultsDetails.innerHTML = '<h4>Detailed Results:</h4>';
@@ -460,8 +635,8 @@ function showResults(score, results) {
     const resultsContainer = document.getElementById('results');
     resultsContainer.appendChild(resultsDetails);
     
-    // Add styles for results details
     const style = document.createElement('style');
+    style.className = 'results-style';
     style.textContent = `
         .results-details {
             margin-top: 20px;
@@ -503,27 +678,6 @@ function showResults(score, results) {
     resultsContainer.appendChild(style);
 }
 
-function resetQuiz() {
-    // Generate new problems
-    currentProblems = generateProblemSet();
-    userAnswers = new Array(10).fill(null);
-    currentProblemIndex = 0;
-    
-    // Reset display
-    document.getElementById('problemSet').style.display = 'block';
-    document.getElementById('results').style.display = 'none';
-    
-    // Remove detailed results if present
-    const resultsDetails = document.querySelector('.results-details');
-    if (resultsDetails) resultsDetails.remove();
-    const extraStyle = document.querySelector('style:last-of-type');
-    if (extraStyle && extraStyle.textContent.includes('.results-details')) {
-        extraStyle.remove();
-    }
-    
-    displayProblems();
-}
-
 // ========================================
 // LEADERBOARD FUNCTIONS
 // ========================================
@@ -531,7 +685,6 @@ function resetQuiz() {
 function showLeaderboard() {
     const scores = JSON.parse(localStorage.getItem('scores'));
     
-    // Group scores by user and get best score
     const userBestScores = {};
     scores.forEach(score => {
         if (!userBestScores[score.userId] || score.score > userBestScores[score.userId].score) {
@@ -543,10 +696,9 @@ function showLeaderboard() {
         }
     });
     
-    // Convert to array and sort
     const leaderboardData = Object.values(userBestScores)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 50); // Top 50
+        .slice(0, 50);
     
     const leaderboardDiv = document.getElementById('leaderboardList');
     leaderboardDiv.innerHTML = '';
@@ -558,7 +710,6 @@ function showLeaderboard() {
             const item = document.createElement('div');
             item.className = `leaderboard-item ${index < 3 ? `rank-${index + 1}` : ''}`;
             
-            // Medal emoji for top 3
             let medal = '';
             if (index === 0) medal = '🥇 ';
             else if (index === 1) medal = '🥈 ';
@@ -573,29 +724,6 @@ function showLeaderboard() {
         });
     }
     
-    // Add CSS for leaderboard items
-    const leaderboardStyle = document.createElement('style');
-    leaderboardStyle.textContent = `
-        .leaderboard-rank {
-            font-weight: bold;
-            min-width: 60px;
-        }
-        .leaderboard-name {
-            flex: 1;
-            margin: 0 10px;
-        }
-        .leaderboard-score {
-            font-weight: bold;
-        }
-        .leaderboard-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-    `;
-    leaderboardDiv.appendChild(leaderboardStyle);
-    
-    // Hide game, show leaderboard
     document.getElementById('gameSection').style.display = 'none';
     document.getElementById('leaderboardSection').style.display = 'block';
 }
@@ -614,16 +742,32 @@ function backToGame() {
 // ========================================
 
 function showMessage(message, type) {
-    // Create message element
     const messageDiv = document.createElement('div');
     messageDiv.className = `message message-${type}`;
     messageDiv.textContent = message;
     
-    // Insert at top of active auth panel
     const activePanel = document.querySelector('.auth-panel.active');
     activePanel.insertBefore(messageDiv, activePanel.firstChild);
     
-    // Remove after 3 seconds
+    setTimeout(() => {
+        messageDiv.remove();
+    }, 3000);
+}
+
+function showGameMessage(message, type) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message message-${type}`;
+    messageDiv.textContent = message;
+    messageDiv.style.position = 'fixed';
+    messageDiv.style.top = '20px';
+    messageDiv.style.left = '50%;
+    messageDiv.style.transform = 'translateX(-50%)';
+    messageDiv.style.zIndex = '9999';
+    messageDiv.style.minWidth = '300px';
+    messageDiv.style.textAlign = 'center';
+    
+    document.body.appendChild(messageDiv);
+    
     setTimeout(() => {
         messageDiv.remove();
     }, 3000);
@@ -640,7 +784,6 @@ function showInstructions() {
     if (modal) {
         modal.style.display = 'flex';
     } else {
-        // Create modal if it doesn't exist
         createInstructionsModal();
     }
 }
@@ -659,6 +802,8 @@ function createInstructionsModal() {
                 <li>🧠 Some problems have parentheses for extra challenge</li>
                 <li>⭐ Score 1 point for each correct answer</li>
                 <li>🏆 Try to beat your personal best!</li>
+                <li>📋 100 UNIQUE problem sets available</li>
+                <li>🎮 Click "New Game" for a fresh set of problems</li>
                 <li>👥 Create an account to save your scores</li>
                 <li>🌍 Compete on the global leaderboard</li>
             </ul>
@@ -680,7 +825,6 @@ function closeInstructions() {
 // EXPORT FUNCTIONS FOR GLOBAL ACCESS
 // ========================================
 
-// Make functions available globally
 window.switchTab = switchTab;
 window.register = register;
 window.login = login;
@@ -688,7 +832,7 @@ window.guestLogin = guestLogin;
 window.logout = logout;
 window.saveAnswer = saveAnswer;
 window.submitQuiz = submitQuiz;
-window.resetQuiz = resetQuiz;
+window.newGame = newGame;
 window.showLeaderboard = showLeaderboard;
 window.refreshLeaderboard = refreshLeaderboard;
 window.backToGame = backToGame;
