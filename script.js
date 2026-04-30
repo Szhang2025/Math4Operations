@@ -9,6 +9,7 @@ let currentProblems = [];
 let currentSetId = null;
 let userAnswers = [];
 let currentProblemIndex = 0;
+let isGameActive = false; // Track if game is currently active
 
 // Store all 100 problem sets
 let allProblemSets = [];
@@ -20,7 +21,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Initialize application
 function init() {
-    generateAllProblemSets(); // Generate 100 UNIQUE problem sets
+    generateAllProblemSets();
     console.log(`✅ Initialized with ${allProblemSets.length} unique problem sets`);
     loadUsers();
     loadScores();
@@ -33,27 +34,23 @@ function generateAllProblemSets() {
     console.log("Generating 100 UNIQUE problem sets...");
     allProblemSets = [];
     
-    const usedSetSignatures = new Set(); // Track unique sets
+    const usedSetSignatures = new Set();
     
     for (let setNum = 1; setNum <= 100; setNum++) {
         let attempts = 0;
         let isUnique = false;
         let newSet = null;
         
-        // Keep generating until we find a unique set (max 1000 attempts)
         while (!isUnique && attempts < 1000) {
             const problems = [];
             
-            // Generate 10 random problems for this set
             for (let probNum = 1; probNum <= 10; probNum++) {
                 const problem = generateRandomProblem();
                 problems.push(problem);
             }
             
-            // Create a unique signature for this set (string of answers)
             const setSignature = problems.map(p => `${p.expression}|${p.answer}`).join(';;');
             
-            // Check if this exact set already exists
             if (!usedSetSignatures.has(setSignature)) {
                 usedSetSignatures.add(setSignature);
                 newSet = {
@@ -70,8 +67,6 @@ function generateAllProblemSets() {
         if (newSet) {
             allProblemSets.push(newSet);
         } else {
-            // Fallback: create a deterministic set as last resort
-            console.warn(`Could not find unique set for set ${setNum}, using fallback`);
             const fallbackProblems = [];
             for (let i = 1; i <= 10; i++) {
                 fallbackProblems.push({
@@ -87,17 +82,7 @@ function generateAllProblemSets() {
         }
     }
     
-    // Verify uniqueness
-    const uniqueCheck = new Set();
-    let duplicateCount = 0;
-    allProblemSets.forEach(set => {
-        const sig = set.problems.map(p => `${p.expression}|${p.answer}`).join(';;');
-        if (uniqueCheck.has(sig)) duplicateCount++;
-        uniqueCheck.add(sig);
-    });
-    
-    console.log(`✅ Generated ${allProblemSets.length} problem sets`);
-    console.log(`🔍 Uniqueness check: ${duplicateCount === 0 ? 'PASSED - No duplicates!' : `FAILED - ${duplicateCount} duplicates found`}`);
+    console.log(`✅ Generated ${allProblemSets.length} unique problem sets`);
 }
 
 // Generate a truly random problem
@@ -124,7 +109,6 @@ function generateRandomProblem() {
             expression = `${num1} × ${num2}`;
             break;
         case '/':
-            // Ensure clean division with no remainders
             num2 = Math.max(1, num2);
             num1 = num1 * num2;
             answer = num1 / num2;
@@ -132,7 +116,6 @@ function generateRandomProblem() {
             break;
     }
     
-    // Add parentheses for complexity (20% chance)
     if (Math.random() < 0.2 && operator !== '/') {
         expression = `(${expression})`;
     }
@@ -161,54 +144,90 @@ function getRandomProblemSet() {
     };
 }
 
-// Start a new game with random set
+// Display previous records
+function displayPreviousRecords() {
+    const scores = JSON.parse(localStorage.getItem('scores'));
+    const userScores = scores.filter(score => score.userId === currentUser.id);
+    
+    const recordsList = document.getElementById('recordsList');
+    if (!recordsList) return;
+    
+    recordsList.innerHTML = '';
+    
+    if (userScores.length === 0) {
+        recordsList.innerHTML = '<div class="no-records">No previous records. Click "New Game" to start playing!</div>';
+        return;
+    }
+    
+    // Show last 10 scores, most recent first
+    const recentScores = userScores.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+    
+    recentScores.forEach(score => {
+        const recordItem = document.createElement('div');
+        recordItem.className = 'record-item';
+        const date = new Date(score.date).toLocaleDateString();
+        const time = new Date(score.date).toLocaleTimeString();
+        recordItem.innerHTML = `
+            <div>
+                <span class="record-score">${score.score}/10</span>
+                <span class="record-set">Set #${score.setId}</span>
+            </div>
+            <div class="record-date">${date} ${time}</div>
+        `;
+        recordsList.appendChild(recordItem);
+    });
+}
+
+// Start a new game
 function newGame() {
     console.log("Starting NEW game...");
+    
+    // Hide records section, show active game section
+    const previousRecords = document.getElementById('previousRecords');
+    const activeGameSection = document.getElementById('activeGameSection');
+    
+    if (previousRecords) previousRecords.style.display = 'none';
+    if (activeGameSection) activeGameSection.style.display = 'block';
     
     // Get random problem set
     const randomSet = getRandomProblemSet();
     currentSetId = randomSet.setId;
-    currentProblems = [...randomSet.problems]; // Create a fresh copy
+    currentProblems = [...randomSet.problems];
     userAnswers = new Array(10).fill(null);
     currentProblemIndex = 0;
+    isGameActive = true;
     
     console.log(`NEW Game - Set #${currentSetId} with ${currentProblems.length} problems`);
     
-    // Update display
+    // Update set number display
     const setNumberElement = document.getElementById('currentSetNumber');
     if (setNumberElement) {
         setNumberElement.textContent = currentSetId;
     }
     
-    // Reset UI - make sure problemSet is visible and results are hidden
+    // Reset UI
     const problemSetDiv = document.getElementById('problemSet');
     const resultsDiv = document.getElementById('results');
     
     if (problemSetDiv) {
         problemSetDiv.style.display = 'block';
-        problemSetDiv.innerHTML = ''; // Clear old content
+        problemSetDiv.innerHTML = '';
     }
     if (resultsDiv) {
         resultsDiv.style.display = 'none';
-        // Remove detailed results if present
         const resultsDetails = document.querySelector('.results-details');
         if (resultsDetails) resultsDetails.remove();
     }
     
-    // Remove any extra style elements
     const extraStyle = document.querySelector('style.results-style');
     if (extraStyle) extraStyle.remove();
     
-    // Reset progress bar
     const progressFill = document.getElementById('progressFill');
     if (progressFill) {
         progressFill.style.width = '0%';
     }
     
-    // Display the problems
     displayProblems();
-    
-    // Show confirmation message
     showGameMessage(`🎮 New Game! Problem Set #${currentSetId} (${randomSet.difficulty})`, 'success');
 }
 
@@ -220,16 +239,13 @@ function displayProblems() {
         return;
     }
     
-    // Clear existing content
     problemSetDiv.innerHTML = '<h3>📝 Solve these problems:</h3>';
     
     if (!currentProblems || currentProblems.length === 0) {
-        console.error("No problems loaded!");
         problemSetDiv.innerHTML += '<p>Error loading problems. Please click "New Game".</p>';
         return;
     }
     
-    // Display each problem
     currentProblems.forEach((problem, index) => {
         const problemCard = document.createElement('div');
         problemCard.className = 'problem-card';
@@ -248,7 +264,6 @@ function displayProblems() {
         problemSetDiv.appendChild(problemCard);
     });
     
-    // Add submit button
     const submitBtn = document.createElement('button');
     submitBtn.textContent = '📊 Submit Quiz';
     submitBtn.className = 'btn-primary';
@@ -258,7 +273,7 @@ function displayProblems() {
     console.log(`✅ Displayed ${currentProblems.length} problems`);
 }
 
-// Setup event listeners for Enter key presses
+// Setup event listeners
 function setupEventListeners() {
     const loginInput = document.getElementById('loginUsername');
     if (loginInput) {
@@ -294,18 +309,16 @@ function checkForSavedSession() {
     }
 }
 
-// Load users from localStorage (starts empty - no demo users)
+// Load users from localStorage
 function loadUsers() {
     if (!localStorage.getItem('users')) {
-        // Start with empty users array - no demo users
         localStorage.setItem('users', JSON.stringify([]));
     }
 }
 
-// Load scores from localStorage (starts empty)
+// Load scores from localStorage
 function loadScores() {
     if (!localStorage.getItem('scores')) {
-        // Start with empty scores array
         localStorage.setItem('scores', JSON.stringify([]));
     }
 }
@@ -413,6 +426,7 @@ function logout() {
     currentUser = null;
     localStorage.removeItem('currentUser');
     localStorage.removeItem('guestMode');
+    isGameActive = false;
     
     document.getElementById('authSection').style.display = 'block';
     document.getElementById('gameSection').style.display = 'none';
@@ -432,7 +446,6 @@ function logout() {
 function showGame() {
     console.log("Showing game section...");
     
-    // Hide auth, show game
     const authSection = document.getElementById('authSection');
     const gameSection = document.getElementById('gameSection');
     const leaderboardSection = document.getElementById('leaderboardSection');
@@ -457,8 +470,18 @@ function showGame() {
         }
     }
     
-    // Start a new game (this will load and display problems)
-    newGame();
+    // Show previous records
+    const previousRecords = document.getElementById('previousRecords');
+    const activeGameSection = document.getElementById('activeGameSection');
+    
+    if (previousRecords) {
+        previousRecords.style.display = 'block';
+        displayPreviousRecords();
+    }
+    
+    if (activeGameSection) {
+        activeGameSection.style.display = 'none';
+    }
 }
 
 function saveAnswer(index) {
@@ -546,6 +569,9 @@ function saveScore(score) {
             showGameMessage(`🎉 New High Score! ${score}/10 🎉`, 'success');
         }, 500);
     }
+    
+    // Refresh records display
+    displayPreviousRecords();
 }
 
 function showResults(score, results) {
@@ -554,7 +580,6 @@ function showResults(score, results) {
     
     if (problemSetDiv) problemSetDiv.style.display = 'none';
     if (resultsDiv) {
-        // Clear previous results
         const oldDetails = resultsDiv.querySelector('.results-details');
         if (oldDetails) oldDetails.remove();
         
@@ -582,7 +607,6 @@ function showResults(score, results) {
     
     if (resultsDiv) resultsDiv.appendChild(resultsDetails);
     
-    // Add styles if not already present
     if (!document.querySelector('style.results-style')) {
         const style = document.createElement('style');
         style.className = 'results-style';
@@ -610,10 +634,7 @@ function showResults(score, results) {
                 background: #f8d7da;
                 color: #721c24;
             }
-            .correct-mark {
-                font-size: 20px;
-            }
-            .wrong-mark {
+            .correct-mark, .wrong-mark {
                 font-size: 20px;
             }
             @media (max-width: 768px) {
@@ -694,8 +715,16 @@ function backToGame() {
     if (gameSection) gameSection.style.display = 'block';
     if (leaderboardSection) leaderboardSection.style.display = 'none';
     
-    // Refresh the game display
-    displayProblems();
+    // Show records, hide active game if no active game
+    const previousRecords = document.getElementById('previousRecords');
+    const activeGameSection = document.getElementById('activeGameSection');
+    
+    if (previousRecords && !isGameActive) {
+        previousRecords.style.display = 'block';
+    }
+    if (activeGameSection && !isGameActive) {
+        activeGameSection.style.display = 'none';
+    }
 }
 
 // ========================================
