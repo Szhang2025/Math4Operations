@@ -163,16 +163,16 @@ function getRandomProblemSet() {
 
 // Start a new game with random set
 function newGame() {
-    console.log("Starting new game...");
+    console.log("Starting NEW game...");
     
     // Get random problem set
     const randomSet = getRandomProblemSet();
     currentSetId = randomSet.setId;
-    currentProblems = randomSet.problems;
+    currentProblems = [...randomSet.problems]; // Create a fresh copy
     userAnswers = new Array(10).fill(null);
     currentProblemIndex = 0;
     
-    console.log(`Loaded Set #${currentSetId} with ${currentProblems.length} problems`);
+    console.log(`NEW Game - Set #${currentSetId} with ${currentProblems.length} problems`);
     
     // Update display
     const setNumberElement = document.getElementById('currentSetNumber');
@@ -184,20 +184,32 @@ function newGame() {
     const problemSetDiv = document.getElementById('problemSet');
     const resultsDiv = document.getElementById('results');
     
-    if (problemSetDiv) problemSetDiv.style.display = 'block';
-    if (resultsDiv) resultsDiv.style.display = 'none';
+    if (problemSetDiv) {
+        problemSetDiv.style.display = 'block';
+        problemSetDiv.innerHTML = ''; // Clear old content
+    }
+    if (resultsDiv) {
+        resultsDiv.style.display = 'none';
+        // Remove detailed results if present
+        const resultsDetails = document.querySelector('.results-details');
+        if (resultsDetails) resultsDetails.remove();
+    }
     
-    // Remove detailed results if present
-    const resultsDetails = document.querySelector('.results-details');
-    if (resultsDetails) resultsDetails.remove();
+    // Remove any extra style elements
     const extraStyle = document.querySelector('style.results-style');
     if (extraStyle) extraStyle.remove();
+    
+    // Reset progress bar
+    const progressFill = document.getElementById('progressFill');
+    if (progressFill) {
+        progressFill.style.width = '0%';
+    }
     
     // Display the problems
     displayProblems();
     
     // Show confirmation message
-    showGameMessage(`New game started! Problem Set #${currentSetId} (${randomSet.difficulty})`, 'success');
+    showGameMessage(`🎮 New Game! Problem Set #${currentSetId} (${randomSet.difficulty})`, 'success');
 }
 
 // Display problems in the UI
@@ -208,6 +220,7 @@ function displayProblems() {
         return;
     }
     
+    // Clear existing content
     problemSetDiv.innerHTML = '<h3>📝 Solve these problems:</h3>';
     
     if (!currentProblems || currentProblems.length === 0) {
@@ -216,6 +229,7 @@ function displayProblems() {
         return;
     }
     
+    // Display each problem
     currentProblems.forEach((problem, index) => {
         const problemCard = document.createElement('div');
         problemCard.className = 'problem-card';
@@ -238,13 +252,10 @@ function displayProblems() {
     const submitBtn = document.createElement('button');
     submitBtn.textContent = '📊 Submit Quiz';
     submitBtn.className = 'btn-primary';
-    submitBtn.onclick = submitQuiz;
+    submitBtn.onclick = () => submitQuiz();
     problemSetDiv.appendChild(submitBtn);
     
-    // Update progress bar
-    updateProgress();
-    
-    console.log(`Displayed ${currentProblems.length} problems`);
+    console.log(`✅ Displayed ${currentProblems.length} problems`);
 }
 
 // Setup event listeners for Enter key presses
@@ -542,7 +553,13 @@ function showResults(score, results) {
     const resultsDiv = document.getElementById('results');
     
     if (problemSetDiv) problemSetDiv.style.display = 'none';
-    if (resultsDiv) resultsDiv.style.display = 'block';
+    if (resultsDiv) {
+        // Clear previous results
+        const oldDetails = resultsDiv.querySelector('.results-details');
+        if (oldDetails) oldDetails.remove();
+        
+        resultsDiv.style.display = 'block';
+    }
     
     const finalScoreSpan = document.getElementById('finalScore');
     if (finalScoreSpan) finalScoreSpan.textContent = `${score}/10`;
@@ -676,6 +693,9 @@ function backToGame() {
     
     if (gameSection) gameSection.style.display = 'block';
     if (leaderboardSection) leaderboardSection.style.display = 'none';
+    
+    // Refresh the game display
+    displayProblems();
 }
 
 // ========================================
