@@ -19,24 +19,28 @@
                 <button class="tab-btn" onclick="switchTab('guest')">Guest Mode</button>
             </div>
             
+            <!-- Login Panel -->
             <div id="loginPanel" class="auth-panel active">
-                <input type="text" id="loginUsername" placeholder="Username" class="input">
+                <input type="text" id="loginUsername" placeholder="Username" class="input" autocomplete="username">
                 <button onclick="login()" class="btn-primary">Login</button>
                 <p class="hint">Don't have an account? Register above!</p>
             </div>
             
+            <!-- Register Panel -->
             <div id="registerPanel" class="auth-panel">
-                <input type="text" id="registerUsername" placeholder="Choose a username" class="input">
-                <input type="password" id="registerPassword" placeholder="Choose a password (min 4 characters)" class="input">
+                <input type="text" id="registerUsername" placeholder="Choose a username" class="input" autocomplete="off">
+                <input type="password" id="registerPassword" placeholder="Choose a password (min 4 characters)" class="input" autocomplete="new-password">
                 <button onclick="register()" class="btn-primary">Create Account</button>
                 <p class="hint">Your data is saved locally in your browser</p>
             </div>
             
+            <!-- Guest Panel -->
             <div id="guestPanel" class="auth-panel">
                 <div class="guest-info">
                     <p>🎮 <strong>Guest Mode</strong></p>
                     <p>✓ Play immediately, no registration needed</p>
                     <p>⚠️ Your scores won't be saved</p>
+                    <p>⚠️ Leaderboard will show registered users only</p>
                 </div>
                 <button onclick="guestLogin()" class="btn-primary">Continue as Guest</button>
             </div>
@@ -46,50 +50,78 @@
         <div id="gameSection" class="card" style="display:none;">
             <div class="game-header">
                 <div class="user-info">
-                    <span>Welcome, <strong id="playerName"></strong></span>
-                    <span id="guestBadge" style="display:none;">(Guest)</span>
+                    <span class="welcome-text">Welcome, </span>
+                    <strong><span id="playerName"></span></strong>
+                    <span class="guest-badge" id="guestBadge" style="display:none;">(Guest)</span>
                 </div>
                 <div class="stats">
-                    <div class="stat-box">🏆 Best Score: <span id="bestScore">0</span></div>
-                    <button onclick="logout()" class="btn-logout">Logout</button>
+                    <div class="stat-box">
+                        <span class="stat-label">🏆 Best Score</span>
+                        <span class="stat-value" id="bestScore">0</span>
+                    </div>
+                    <button onclick="logout()" class="btn-logout" title="Logout">🚪 Logout</button>
                 </div>
             </div>
             
-            <!-- NEW GAME BUTTON - PROMINENT -->
+            <!-- NEW GAME BUTTON - PROMINENTLY DISPLAYED -->
             <div style="text-align: center; margin: 20px 0;">
-                <button onclick="startNewGame()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 40px; font-size: 24px; font-weight: bold; border-radius: 50px; cursor: pointer;">🎮 NEW GAME 🎮</button>
+                <button onclick="startNewGame()" class="btn-new-game">🎮 NEW GAME 🎮</button>
             </div>
             
-            <!-- Previous Records -->
-            <div id="previousRecords" style="margin-bottom: 30px;">
+            <!-- Previous Records Section -->
+            <div id="previousRecords" class="records-container">
                 <h3>📊 Your Previous Records</h3>
-                <div id="recordsList"></div>
+                <div id="recordsList" class="records-list">
+                    <!-- Previous scores will be displayed here -->
+                </div>
             </div>
             
-            <!-- Active Game Area - HIDDEN INITIALLY -->
+            <!-- Active Game Area (hidden until New Game is clicked) -->
             <div id="activeGameArea" style="display: none;">
                 <div class="progress-bar">
                     <div class="progress-fill" id="progressFill" style="width: 0%"></div>
                 </div>
-                <div id="problemSet"></div>
+                
+                <div id="problemSet" class="problems-container">
+                    <!-- Problems will be dynamically injected here -->
+                </div>
+                
                 <div id="resultsArea" style="display:none;">
-                    <h3>Quiz Complete!</h3>
-                    <p>Your Score: <span id="finalScore">0</span>/10</p>
-                    <button onclick="startNewGame()" class="btn-primary">Play Again</button>
-                    <button onclick="showLeaderboard()" class="btn-secondary">Leaderboard</button>
+                    <div class="results-card">
+                        <div class="trophy-icon">🏆</div>
+                        <h3>Quiz Complete!</h3>
+                        <div class="final-score">
+                            <span class="score-label">Your Score:</span>
+                            <span class="score-value" id="finalScore">0</span>
+                            <span class="score-max">/10</span>
+                        </div>
+                        <div class="results-actions">
+                            <button onclick="startNewGame()" class="btn-primary">🎮 Play Again</button>
+                            <button onclick="showLeaderboard()" class="btn-secondary">🏅 View Leaderboard</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Leaderboard Section -->
         <div id="leaderboardSection" class="card" style="display:none;">
-            <h2>🏆 Global Leaderboard</h2>
-            <div id="leaderboardList"></div>
-            <button onclick="backToGame()" class="btn-secondary">Back to Game</button>
+            <div class="leaderboard-header">
+                <h2>🏆 Global Leaderboard</h2>
+                <p class="subtitle">Top scores from all players</p>
+            </div>
+            <div id="leaderboardList" class="leaderboard-list">
+                <!-- Leaderboard entries will be injected here -->
+            </div>
+            <div class="leaderboard-actions">
+                <button onclick="backToGame()" class="btn-secondary">← Back to Game</button>
+                <button onclick="showLeaderboard()" class="btn-secondary">🔄 Refresh</button>
+            </div>
         </div>
     </div>
 
-    <button class="help-button" onclick="showInstructions()">?</button>
+    <!-- Floating help button -->
+    <button class="help-button" onclick="showInstructions()" title="How to play">?</button>
 
     <script src="script.js"></script>
 </body>
